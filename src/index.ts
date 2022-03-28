@@ -26,13 +26,15 @@ async function main() {
     await client.connect();
 
     let listDatabasesResult: ListDatabasesResult = await client.db().admin().listDatabases();
+    let csvString: string = "Name, Type, Size, Accesses\n";
     for(const db of listDatabasesResult.databases) {
         if(db.name !== "config" && db.name !== "admin") {
             let dbInfoItem: DbInfo = await getDbInfoItem(db);
-            printReport(dbInfoItem);
+            csvString += printReportCsv(dbInfoItem);
+            //printReport(dbInfoItem);
         }
-
     }
+    console.log(csvString);
 }
 
 
@@ -99,6 +101,19 @@ function printReport(dbInfo: DbInfo) {
         }
     }
     console.log("\n---------------------------------------------------------------------------------------------------\n");
+}
+
+function printReportCsv(dbInfo: DbInfo): string {
+    let csvString: string = "";
+    for(const collection of dbInfo.collections) {
+        if(collection.name.length > 0 && collection.size > 0) {
+            csvString += dbInfo.name + "." + collection.name + ",Collection," + collection.size + ",\n"; 
+            for(const index of collection.indexes) {
+                csvString += dbInfo.name + "." + collection.name + "." + index.name +  ",Index," + index.size + "," + index.accesses + "\n";
+            }
+        }
+    }
+    return csvString;
 }
 
 main()
